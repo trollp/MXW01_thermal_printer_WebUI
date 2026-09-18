@@ -184,7 +184,7 @@ Job fields:
   "dither": "steinberg", "brightness": 128, "intensity": 93, "rotate": 0, "flip": "none", "invert": false,
   "text": "…", "size": 26, "font": "Liberation Sans", "mono": false, "bold": false,
   "align": "left", "margin": 10, "lineHeight": 1.25,                       // text
-  "images": ["data:image/png;base64,…"], "gap": 24, "noScale": false,       // image
+  "images": ["data:image/png;base64,…", "https://host/pic.jpg"], "gap": 24, "noScale": false,   // image: data URLs or http(s) URLs
   "label": "caption", "labelSize": 22,                                     // qr (size = code size)
   "px": 120 }                                                              // feed
 ```

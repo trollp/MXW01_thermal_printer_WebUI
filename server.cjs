@@ -66,18 +66,38 @@ function sendJson(res, status, obj) {
   res.end(JSON.stringify(obj));
 }
 
-function dataUrlToBuffer(s) {
-  if (typeof s !== "string") throw new HttpError(400, "image must be a data URL");
-  const m = /^data:[^;,]*;base64,(.*)$/s.exec(s);
-  return Buffer.from(m ? m[1] : s, "base64");
+const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+
+/** An image given as a data URL, raw base64, or an http(s) URL the server fetches (handy for automations). */
+async function imageToBuffer(src) {
+  if (typeof src !== "string") throw new HttpError(400, "image must be a data URL or an http(s) URL");
+  if (/^https?:\/\//i.test(src)) {
+    let res;
+    try {
+      res = await fetch(src, { signal: AbortSignal.timeout(20000), redirect: "follow" });
+    } catch (err) {
+      throw new HttpError(400, `cannot fetch ${src}: ${err.message}`);
+    }
+    if (!res.ok) throw new HttpError(400, `cannot fetch ${src}: HTTP ${res.status}`);
+    const len = Number(res.headers.get("content-length") || 0);
+    if (len > MAX_IMAGE_BYTES) throw new HttpError(413, "image too large");
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > MAX_IMAGE_BYTES) throw new HttpError(413, "image too large");
+    return buf;
+  }
+  const m = /^data:[^;,]*;base64,(.*)$/s.exec(src);
+  return Buffer.from(m ? m[1] : src, "base64");
 }
 
-/** Turn a UI job description into a render job + print options, applying saved defaults. */
-function buildJob(body) {
+/** Turn a UI/API job description into a render job + print options, applying saved defaults. */
+async function buildJob(body) {
   const type = body.type;
   const sectionDefaults = { ...settings.print, ...(settings[type] || {}) };
   const job = { ...sectionDefaults, ...body, type };
-  if (type === "image") job.images = (body.images || []).map(dataUrlToBuffer);
+  if (type === "image") {
+    const list = [].concat(body.images || [], body.imageUrls || [], body.image || []);
+    job.images = await Promise.all(list.map(imageToBuffer));
+  }
   if (type === "qr") job.dither = "threshold";
   if (type === "feed") job.dither = "threshold";
   const popts = R.printOptions(job, sectionDefaults);
@@ -148,7 +168,7 @@ async function handle(req, res) {
   }
 
   if (route === "POST /api/preview") {
-    const { job, popts } = buildJob(await readJson(req));
+    const { job, popts } = await buildJob(await readJson(req));
     const canvas = R.ditheredPreview(await R.renderJob(job), popts);
     res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "no-store", "X-Height": String(canvas.height) });
     res.end(canvas.toBuffer("image/png"));
@@ -156,7 +176,7 @@ async function handle(req, res) {
   }
 
   if (route === "POST /api/print") {
-    const { job, popts } = buildJob(await readJson(req));
+    const { job, popts } = await buildJob(await readJson(req));
     const canvas = await R.renderJob(job);
     log(`print ${job.type} ${canvas.height}px (${popts.dither}, intensity ${popts.intensity})`);
     await pm.print(R.canvasImageData(canvas), popts, job.type);
