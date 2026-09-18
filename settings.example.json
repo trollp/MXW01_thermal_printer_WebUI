@@ -3,7 +3,9 @@
     "host": "127.0.0.1",
     "port": 8377,
     "idleDisconnectSec": 120,
-    "scanTimeoutSec": 30
+    "scanTimeoutSec": 30,
+    "keepAlive": false,
+    "keepAliveIntervalSec": 60
   },
   "bluetooth": { "address": "", "adapter": "hci0" },
   "print": { "dither": "steinberg", "brightness": 128, "intensity": 93, "rotate": 0, "flip": "none" },

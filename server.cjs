@@ -29,8 +29,11 @@ const pm = new PrinterManager({
   scanTimeoutSec: settings.server.scanTimeoutSec,
   address: settings.bluetooth.address,
   adapter: settings.bluetooth.adapter,
+  keepAlive: settings.server.keepAlive,
+  keepAliveIntervalSec: settings.server.keepAliveIntervalSec,
   log,
 });
+if (settings.server.keepAlive) pm.setKeepAlive(true);
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -139,6 +142,7 @@ async function handle(req, res) {
     pm.scanTimeoutSec = settings.server.scanTimeoutSec;
     pm.address = settings.bluetooth.address;
     pm.adapter = settings.bluetooth.adapter;
+    pm.setKeepAlive(settings.server.keepAlive, settings.server.keepAliveIntervalSec);
     log("settings saved");
     return sendJson(res, 200, { settings });
   }

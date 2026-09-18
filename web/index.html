@@ -187,6 +187,11 @@
       </div>
       <div class="hint">The printer accepts one connection at a time: while this UI holds it, the phone app can't connect.</div>
       <div class="row" style="margin-top:14px">
+        <div class="field" style="align-self:end"><label class="check"><input type="checkbox" id="s_server_keepAlive"> Keep the printer connected permanently</label></div>
+        <div class="field"><label>Keep-alive poll interval (s)</label><input type="number" id="s_server_keepAliveIntervalSec" min="10" max="3600"></div>
+      </div>
+      <div class="hint">Holds the link and polls status regularly, which stops the printer's idle auto power-off on most firmwares and makes prints start instantly. The phone app cannot connect while this is on. If the printer is off, the server retries every 30 s.</div>
+      <div class="row" style="margin-top:14px">
         <div class="field"><label>Printer Bluetooth address (optional, e.g. AA:BB:CC:DD:EE:FF)</label><input type="text" id="s_bluetooth_address" placeholder="leave empty to find it by scanning"></div>
         <div class="field"><label>Adapter</label><input type="text" id="s_bluetooth_adapter" placeholder="hci0"></div>
       </div>
@@ -377,7 +382,7 @@
     const pill = $("pill");
     pill.className = "pill " + (s.busy ? "busy" : s.connected ? "on" : s.lastError ? "err" : "");
     const batPill = s.lastInfo && typeof s.lastInfo.battery === "number" ? ` · 🔋 ${s.lastInfo.battery}%` : "";
-    $("pillText").textContent = s.busy ? (s.connected ? "printing…" : "connecting…") : s.connected ? `connected · ${s.deviceName || "MXW01"}${batPill}` : s.lastError ? "error" : "not connected" + batPill;
+    $("pillText").textContent = s.busy ? (s.connected ? "working…" : "connecting…") : s.connected ? `connected · ${s.deviceName || "MXW01"}${batPill}${s.keepAlive ? " · keep-alive" : ""}` : s.lastError ? "error" : (s.keepAlive ? "printer off — waiting" : "not connected") + batPill;
     $("btnConnect").disabled = s.connected || s.busy;
     $("btnDisconnect").disabled = !s.connected;
     const st = s.lastStatus, info = s.lastInfo || {};
@@ -399,12 +404,13 @@
   }
 
   // ----- settings ------------------------------------------------------
-  const SETTING_FIELDS = ["server.idleDisconnectSec", "server.scanTimeoutSec", "bluetooth.address", "bluetooth.adapter", "print.brightness", "print.intensity", "print.rotate", "print.flip", "image.dither", "image.brightness", "image.intensity", "image.gap", "text.dither", "text.intensity", "text.font", "text.size", "text.align", "text.margin", "text.lineHeight", "qr.intensity", "qr.size", "qr.labelSize", "feed.px"];
+  const SETTING_FIELDS = ["server.idleDisconnectSec", "server.scanTimeoutSec", "server.keepAlive", "server.keepAliveIntervalSec", "bluetooth.address", "bluetooth.adapter", "print.brightness", "print.intensity", "print.rotate", "print.flip", "image.dither", "image.brightness", "image.intensity", "image.gap", "text.dither", "text.intensity", "text.font", "text.size", "text.align", "text.margin", "text.lineHeight", "qr.intensity", "qr.size", "qr.labelSize", "feed.px"];
   function fillSettingsForm(s) {
     for (const p of SETTING_FIELDS) {
       const [a, b] = p.split(".");
       const el = $(`s_${a}_${b}`);
-      if (el) el.value = s[a][b];
+      if (!el) continue;
+      if (el.type === "checkbox") el.checked = !!s[a][b]; else el.value = s[a][b];
     }
   }
   function readSettingsForm() {
@@ -413,7 +419,7 @@
       const [a, b] = p.split(".");
       const el = $(`s_${a}_${b}`);
       if (!el) continue;
-      out[a][b] = el.type === "number" ? Number(el.value) : /^\d+$/.test(el.value) && el.tagName === "SELECT" ? Number(el.value) : el.value;
+      out[a][b] = el.type === "checkbox" ? el.checked : el.type === "number" ? Number(el.value) : /^\d+$/.test(el.value) && el.tagName === "SELECT" ? Number(el.value) : el.value;
     }
     return out;
   }
