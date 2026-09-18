@@ -13,7 +13,7 @@ Usage:
   mxprint text [text...]         print text; reads stdin when no text given or text is "-"
   mxprint qr <text> [--label L]  print a QR code, optionally with a caption
   mxprint feed [px]              feed blank paper (default ${settings.feed.px}px)
-  mxprint status                 show printer status
+  mxprint status                 show printer status (flags, battery %, temperature, firmware)
   mxprint web                    start the web UI (see mxprint web --help)
   mxprint help
 

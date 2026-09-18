@@ -106,7 +106,7 @@ Details, diagnosis and other pitfalls: [docs/BLUETOOTH.md](docs/BLUETOOTH.md).
 | **Text** | Textarea with `# heading`, `## sub‑heading`, `---` rule, blank line = paragraph gap. Font (any system font), size, alignment, margin, line height, bold, monospace. |
 | **Image** | Drop, pick or paste images; several print as one strip; scale‑to‑width or keep pixels. |
 | **QR code** | Text/URL, size, optional caption. |
-| **Printer** | Live connection state, paper / cover / battery / temperature flags, feed paper, and a *dither test strip* that prints a gradient in every mode for comparison. |
+| **Printer** | Live connection state, battery %, print‑head temperature, firmware version, paper / cover / jam flags, feed paper, and a *dither test strip* that prints a gradient in every mode for comparison. |
 | **Settings** | All defaults below, plus idle‑disconnect and scan timeout. |
 
 Every print tab has a collapsible *Print options* block (dither, rotate, flip,
@@ -172,7 +172,7 @@ curl -s -X POST localhost:8377/api/print -H 'Content-Type: application/json' \
 |---|---|
 | `POST /api/print` | job → `{ok, height, state}` when the printer reports completion |
 | `POST /api/preview` | job → `image/png` of the dithered bitmap, header `X-Height` |
-| `POST /api/status` | `{state: {printing, paper_jam, out_of_paper, cover_open, battery_low, overheat}, text}` |
+| `POST /api/status` | `{state: {printing, paper_jam, out_of_paper, cover_open, battery_low, overheat, battery, temperatureC, firmware}, text}` |
 | `POST /api/connect`, `POST /api/disconnect` | hold / release the BLE link |
 | `GET /api/state` | manager snapshot; `GET /api/events` streams it (SSE) |
 | `GET /api/settings`, `PUT /api/settings` | read / save defaults |
@@ -230,6 +230,11 @@ UI ─▶ server.cjs (http + SSE) ────────────┴─ lib
 The printer is 384 dots wide at 203 dpi (48 mm printable). Everything is
 rendered onto a 384‑px‑wide canvas, dithered to 1 bit, and streamed as 48‑byte
 rows.
+
+Besides the library's commands, `PrinterManager` sends `0xAB` (battery level,
+one byte = %), `0xB1` (firmware version string) and reads byte 4 of the `0xA1`
+status payload as the head temperature in °C (observed on firmware 1.9.3.1.2;
+protocol notes from [dropalltables/catprinter](https://github.com/dropalltables/catprinter/blob/main/PROTOCOL.md)).
 
 ### Notes on `package.json`
 

@@ -162,6 +162,7 @@ async function handle(req, res) {
   if (route === "POST /api/status") {
     const state = await pm.status();
     return sendJson(res, 200, { state, text: describeState(state), manager: pm.snapshot() });
+    // state also carries battery (%), temperatureC and firmware
   }
 
   if (route === "POST /api/connect") { await pm.connect(); return sendJson(res, 200, pm.snapshot()); }

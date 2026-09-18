@@ -83,6 +83,7 @@
   .stat b { display: block; font-size: 15px; margin-top: 2px; }
   .stat.bad b { color: var(--bad); }
   .stat.good b { color: var(--ok); }
+  .stat.warn b { color: var(--warn); }
 
   #toasts { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 10; }
   .toast { padding: 10px 16px; border-radius: 9px; background: var(--ink); color: var(--bg); font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25); animation: rise .2s ease-out; }
@@ -375,12 +376,20 @@
   function renderState(s) {
     const pill = $("pill");
     pill.className = "pill " + (s.busy ? "busy" : s.connected ? "on" : s.lastError ? "err" : "");
-    $("pillText").textContent = s.busy ? (s.connected ? "printing…" : "connecting…") : s.connected ? `connected · ${s.deviceName || "MXW01"}` : s.lastError ? "error" : "not connected";
+    const batPill = s.lastInfo && typeof s.lastInfo.battery === "number" ? ` · 🔋 ${s.lastInfo.battery}%` : "";
+    $("pillText").textContent = s.busy ? (s.connected ? "printing…" : "connecting…") : s.connected ? `connected · ${s.deviceName || "MXW01"}${batPill}` : s.lastError ? "error" : "not connected" + batPill;
     $("btnConnect").disabled = s.connected || s.busy;
     $("btnDisconnect").disabled = !s.connected;
-    const st = s.lastStatus;
-    const flags = st ? [["Printer", st.printing ? "printing" : "idle", ""], ["Paper", st.out_of_paper ? "out of paper" : "ok", st.out_of_paper ? "bad" : "good"], ["Cover", st.cover_open ? "open" : "closed", st.cover_open ? "bad" : "good"], ["Battery", st.battery_low ? "low" : "ok", st.battery_low ? "bad" : "good"], ["Temperature", st.overheat ? "overheat" : "ok", st.overheat ? "bad" : "good"], ["Jam", st.paper_jam ? "jam" : "none", st.paper_jam ? "bad" : "good"]] : [["Status", "unknown — press refresh", ""]];
-    $("statusGrid").innerHTML = [["Connection", s.connected ? "connected" : "disconnected", s.connected ? "good" : ""], ...flags].map(([k, v, c]) => `<div class="stat ${c}">${k}<b>${v}</b></div>`).join("");
+    const st = s.lastStatus, info = s.lastInfo || {};
+    const bat = typeof info.battery === "number" ? info.battery : null;
+    const batText = bat === null ? (st ? (st.battery_low ? "low" : "ok") : "—") : `${bat} %${st && st.battery_low ? " (low)" : ""}`;
+    const batClass = (st && st.battery_low) || (bat !== null && bat < 20) ? "bad" : bat !== null && bat < 40 ? "warn" : bat !== null || st ? "good" : "";
+    const tempText = typeof info.temperatureC === "number" ? `${info.temperatureC} °C${st && st.overheat ? " (overheat)" : ""}` : st ? (st.overheat ? "overheat" : "ok") : "—";
+    const flags = st ? [["Printer", st.printing ? "printing" : "idle", ""], ["Paper", st.out_of_paper ? "out of paper" : "ok", st.out_of_paper ? "bad" : "good"], ["Cover", st.cover_open ? "open" : "closed", st.cover_open ? "bad" : "good"], ["Jam", st.paper_jam ? "jam" : "none", st.paper_jam ? "bad" : "good"]] : [["Status", "unknown — press refresh", ""]];
+    const tiles = [["Connection", s.connected ? "connected" : "disconnected", s.connected ? "good" : ""], ["Battery", batText, batClass], ["Head temperature", tempText, st && st.overheat ? "bad" : typeof info.temperatureC === "number" ? "good" : ""], ...flags];
+    if (info.firmware) tiles.push(["Firmware", info.firmware, ""]);
+    if (info.at) tiles.push(["Last read", new Date(info.at).toLocaleTimeString(), ""]);
+    $("statusGrid").innerHTML = tiles.map(([k, v, c]) => `<div class="stat ${c}">${k}<b>${v}</b></div>`).join("");
     $("lastJob").textContent = s.lastError ? "Last error: " + s.lastError : s.lastJob ? `Last job: ${s.lastJob.label} at ${new Date(s.lastJob.at).toLocaleTimeString()}${s.lastJob.ok ? "" : " (failed)"}` : "";
   }
   function connectEvents() {
