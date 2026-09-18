@@ -228,11 +228,14 @@ dotted. Large series are downsampled to ~800 points.
 
 One row per day: weekday, icon, low–high range bar on a shared scale,
 precipitation (mm, optional probability) and wind, plus a small
-precipitation bar. Conditions use the Home‑Assistant/Weather‑Kit vocabulary:
+precipitation bar. Wind is printed in m/s; give `"windUnit": "kn"|"km/h"|"mph"`
+(job‑level or per day) when the source uses another unit. Conditions use the
+Home‑Assistant/Weather‑Kit vocabulary:
 `sunny clear-night partlycloudy cloudy rainy pouring snowy snowy-rainy hail
-lightning lightning-rainy fog windy windy-variant exceptional`. `temperature`
-/ `templow` / `wind_speed` are accepted as aliases, so a raw forecast entry
-can be passed through.
+lightning lightning-rainy fog windy windy-variant exceptional`. `datetime`, `temperature`,
+`templow`, `wind_speed`, `precipitation_probability` are accepted as aliases,
+so raw forecast entries can be passed through unchanged; `now` likewise takes
+`humidity`, `wind`/`wind_speed` and builds the description itself.
 
 Try both with `mxprint job file.json --preview out.png`.
 
