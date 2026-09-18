@@ -1,0 +1,4 @@
+#!/bin/sh
+# Launcher for the web UI (same environment as mxprint).
+DIR=$(dirname "$(readlink -f "$0")")
+NOBLE_BINDINGS=dbus exec node --preserve-symlinks --preserve-symlinks-main "$DIR/server.cjs" "$@"

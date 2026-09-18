@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MXW01 Printer</title>
+<style>
+  :root {
+    --bg: #f3f1ec; --panel: #ffffff; --ink: #1d1c1a; --muted: #6b6862; --line: #dedbd3;
+    --accent: #c2410c; --accent-ink: #fff; --ok: #15803d; --warn: #b45309; --bad: #b91c1c;
+    --paper-shadow: rgba(0,0,0,.18); --field: #faf9f6;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17171a; --panel: #212125; --ink: #ecebe6; --muted: #a09d95; --line: #35353b;
+      --accent: #f97316; --accent-ink: #1a1a1a; --ok: #4ade80; --warn: #fbbf24; --bad: #f87171;
+      --paper-shadow: rgba(0,0,0,.6); --field: #1b1b1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+  header h1 small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border-radius: 999px; background: var(--field); border: 1px solid var(--line); font-size: 13px; }
+  .pill i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .pill.on i { background: var(--ok); }
+  .pill.busy i { background: var(--warn); animation: pulse 1s infinite; }
+  .pill.err i { background: var(--bad); }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .tabs { display: flex; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tabs button { flex: 1; background: none; border: 0; padding: 12px 10px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tabs button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab { display: none; padding: 18px; }
+  .tab.active { display: block; }
+
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field { margin-bottom: 14px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); font: inherit;
+  }
+  textarea { min-height: 160px; resize: vertical; font-family: ui-monospace, "Liberation Mono", monospace; font-size: 14px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .range { display: grid; grid-template-columns: 1fr 52px; gap: 8px; align-items: center; }
+  .range output { font-variant-numeric: tabular-nums; text-align: right; font-size: 13px; }
+  .check { display: inline-flex; align-items: center; gap: 6px; margin-right: 16px; font-size: 14px; color: var(--ink); cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  code { background: var(--field); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+
+  details { border: 1px solid var(--line); border-radius: 10px; padding: 0 14px; margin-top: 6px; }
+  details summary { cursor: pointer; padding: 10px 0; font-weight: 600; font-size: 14px; }
+  details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+
+  .actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+  button.btn { padding: 9px 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+  button.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button.btn.small { padding: 5px 10px; font-size: 13px; font-weight: 500; }
+  button.btn:disabled { opacity: .5; cursor: default; }
+
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 26px; text-align: center; color: var(--muted); cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--ink); }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .thumb { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb button { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; cursor: pointer; font-size: 13px; line-height: 22px; padding: 0; }
+
+  .preview-panel { position: sticky; top: 16px; align-self: start; }
+  .preview-head { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); gap: 10px; }
+  .preview-body { padding: 20px; background: repeating-linear-gradient(45deg, transparent 0 10px, rgba(127,127,127,.06) 10px 20px); border-radius: 0 0 12px 12px; max-height: 75vh; overflow: auto; }
+  .paper { width: 100%; max-width: 384px; margin: 0 auto; background: #fff; box-shadow: 0 6px 22px var(--paper-shadow); min-height: 60px; display: block; image-rendering: pixelated; }
+  .paper.empty { display: flex; align-items: center; justify-content: center; color: #999; font-size: 13px; height: 120px; }
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0; }
+  .stat { padding: 10px 12px; border-radius: 9px; background: var(--field); border: 1px solid var(--line); font-size: 13px; }
+  .stat b { display: block; font-size: 15px; margin-top: 2px; }
+  .stat.bad b { color: var(--bad); }
+  .stat.good b { color: var(--ok); }
+
+  #toasts { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 10; }
+  .toast { padding: 10px 16px; border-radius: 9px; background: var(--ink); color: var(--bg); font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25); animation: rise .2s ease-out; }
+  .toast.bad { background: var(--bad); color: #fff; }
+  .toast.good { background: var(--ok); color: #fff; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  h3 { font-size: 14px; margin: 18px 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>MXW01 <small>thermal printer</small></h1>
+  <span class="pill" id="pill"><i></i><span id="pillText">connecting…</span></span>
+  <span class="spacer"></span>
+  <button class="btn small" id="btnConnect">Connect</button>
+  <button class="btn small" id="btnDisconnect">Disconnect</button>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="tabs" id="tabs">
+      <button data-tab="text" class="active">Text</button>
+      <button data-tab="image">Image</button>
+      <button data-tab="qr">QR code</button>
+      <button data-tab="printer">Printer</button>
+      <button data-tab="settings">Settings</button>
+    </div>
+
+    <!-- TEXT -->
+    <div class="tab active" id="tab-text">
+      <div class="field">
+        <label for="text">Text</label>
+        <textarea id="text" placeholder="# Heading&#10;Some text…&#10;---&#10;## Sub heading"></textarea>
+        <div class="hint"><code># </code> big heading · <code>## </code> heading · <code>---</code> rule · blank line = paragraph gap</div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Font</label><select id="text_font"></select></div>
+        <div class="field"><label>Size (px)</label><input type="number" id="text_size" min="6" max="200"></div>
+        <div class="field"><label>Align</label><select id="text_align"><option>left</option><option>center</option><option>right</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Side margin (px)</label><input type="number" id="text_margin" min="0" max="180"></div>
+        <div class="field"><label>Line height</label><input type="number" id="text_lineHeight" min="0.8" max="3" step="0.05"></div>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="text_bold"> Bold</label>
+        <label class="check"><input type="checkbox" id="text_mono"> Monospace</label>
+      </div>
+      <div id="opts-text"></div>
+      <div class="actions"><button class="btn primary" data-print="text">Print text</button></div>
+    </div>
+
+    <!-- IMAGE -->
+    <div class="tab" id="tab-image">
+      <div class="drop" id="drop">Drop images here, click to choose, or paste from clipboard<br><span class="hint">PNG · JPG · GIF · SVG — several files print as one strip</span></div>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="row" style="margin-top:14px">
+        <div class="field"><label>Gap between images (px)</label><input type="number" id="image_gap" min="0" max="2000"></div>
+        <div class="field" style="align-self:end"><label class="check"><input type="checkbox" id="image_noScale"> Don't scale to paper width</label></div>
+      </div>
+      <div id="opts-image"></div>
+      <div class="actions"><button class="btn primary" data-print="image">Print image</button></div>
+    </div>
+
+    <!-- QR -->
+    <div class="tab" id="tab-qr">
+      <div class="field"><label for="qr_text">Text or URL</label><input type="text" id="qr_text" placeholder="https://…"></div>
+      <div class="row">
+        <div class="field"><label>Size (px, max 384)</label><input type="number" id="qr_size" min="64" max="384"></div>
+        <div class="field"><label>Caption</label><input type="text" id="qr_label" placeholder="optional"></div>
+        <div class="field"><label>Caption size</label><input type="number" id="qr_labelSize" min="6" max="100"></div>
+      </div>
+      <div id="opts-qr"></div>
+      <div class="actions"><button class="btn primary" data-print="qr">Print QR</button></div>
+    </div>
+
+    <!-- PRINTER -->
+    <div class="tab" id="tab-printer">
+      <div class="status-grid" id="statusGrid"></div>
+      <div class="actions">
+        <button class="btn" id="btnStatus">Refresh status</button>
+        <span class="hint" id="lastJob"></span>
+      </div>
+      <h3>Feed paper</h3>
+      <div class="row">
+        <div class="field"><label>Length (px, 8 px ≈ 1 mm)</label><input type="number" id="feed_px" min="1" max="4000"></div>
+      </div>
+      <div class="actions"><button class="btn primary" data-print="feed">Feed</button></div>
+      <h3>Test page</h3>
+      <div class="actions"><button class="btn" id="btnTest">Print dither test strip</button><span class="hint">prints a gradient in every dither mode to compare them</span></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="tab" id="tab-settings">
+      <p class="hint" style="margin-top:0">Saved defaults for the web UI and the <code>mxprint</code> command. Values on the other tabs start from these.</p>
+      <h3>Connection</h3>
+      <div class="row">
+        <div class="field"><label>Idle disconnect (s) — 0 = disconnect after every job</label><input type="number" id="s_server_idleDisconnectSec" min="0" max="86400"></div>
+        <div class="field"><label>Scan timeout (s)</label><input type="number" id="s_server_scanTimeoutSec" min="5" max="600"></div>
+      </div>
+      <div class="hint">The printer accepts one connection at a time: while this UI holds it, the phone app can't connect.</div>
+      <h3>Default print options</h3>
+      <div class="row">
+        <div class="field"><label>Brightness (0–255)</label><input type="number" id="s_print_brightness" min="0" max="255"></div>
+        <div class="field"><label>Intensity (0–255)</label><input type="number" id="s_print_intensity" min="0" max="255"></div>
+        <div class="field"><label>Rotate</label><select id="s_print_rotate"><option>0</option><option>90</option><option>180</option><option>270</option></select></div>
+        <div class="field"><label>Flip</label><select id="s_print_flip"><option>none</option><option>h</option><option>v</option><option>both</option></select></div>
+      </div>
+      <h3>Images</h3>
+      <div class="row">
+        <div class="field"><label>Dither</label><select id="s_image_dither"></select></div>
+        <div class="field"><label>Brightness</label><input type="number" id="s_image_brightness" min="0" max="255"></div>
+        <div class="field"><label>Intensity</label><input type="number" id="s_image_intensity" min="0" max="255"></div>
+        <div class="field"><label>Gap (px)</label><input type="number" id="s_image_gap" min="0" max="2000"></div>
+      </div>
+      <h3>Text</h3>
+      <div class="row">
+        <div class="field"><label>Dither</label><select id="s_text_dither"></select></div>
+        <div class="field"><label>Intensity</label><input type="number" id="s_text_intensity" min="0" max="255"></div>
+        <div class="field"><label>Font</label><select id="s_text_font"></select></div>
+        <div class="field"><label>Size</label><input type="number" id="s_text_size" min="6" max="200"></div>
+        <div class="field"><label>Align</label><select id="s_text_align"><option>left</option><option>center</option><option>right</option></select></div>
+        <div class="field"><label>Margin</label><input type="number" id="s_text_margin" min="0" max="180"></div>
+        <div class="field"><label>Line height</label><input type="number" id="s_text_lineHeight" min="0.8" max="3" step="0.05"></div>
+      </div>
+      <h3>QR &amp; feed</h3>
+      <div class="row">
+        <div class="field"><label>QR intensity</label><input type="number" id="s_qr_intensity" min="0" max="255"></div>
+        <div class="field"><label>QR size</label><input type="number" id="s_qr_size" min="64" max="384"></div>
+        <div class="field"><label>Caption size</label><input type="number" id="s_qr_labelSize" min="6" max="100"></div>
+        <div class="field"><label>Feed length (px)</label><input type="number" id="s_feed_px" min="1" max="4000"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="btnSave">Save settings</button>
+        <button class="btn" id="btnReset">Reset to built-in defaults</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel preview-panel">
+    <div class="preview-head"><span>Preview — exactly what will print</span><span class="spacer"></span><span id="previewInfo"></span></div>
+    <div class="preview-body"><div class="paper empty" id="paperEmpty">nothing to print yet</div><img class="paper" id="paper" hidden alt="print preview"></div>
+  </aside>
+</main>
+<div id="toasts"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const state = { tab: "text", images: [], settings: null, fonts: [], dithers: [] };
+
+  // ----- toasts --------------------------------------------------------
+  function toast(msg, kind = "") {
+    const el = document.createElement("div");
+    el.className = "toast " + kind;
+    el.textContent = msg;
+    $("toasts").appendChild(el);
+    setTimeout(() => el.remove(), kind === "bad" ? 6000 : 3000);
+  }
+
+  async function api(method, path, body) {
+    const res = await fetch(path, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+    if (res.headers.get("content-type")?.startsWith("image/")) {
+      if (!res.ok) throw new Error((await res.json()).error);
+      return res;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    return data;
+  }
+
+  // ----- shared print-option block (dither / brightness / intensity / rotate / flip / invert)
+  function optionsBlock(type) {
+    const d = { ...state.settings.print, ...(state.settings[type] || {}) };
+    const showDither = type !== "qr";
+    return `
+    <details>
+      <summary>Print options</summary>
+      <div class="row">
+        ${showDither ? `<div class="field"><label>Dither</label><select id="${type}_dither">${state.dithers.map((x) => `<option ${x === d.dither ? "selected" : ""}>${x}</option>`).join("")}</select></div>` : ""}
+        <div class="field"><label>Rotate</label><select id="${type}_rotate">${[0, 90, 180, 270].map((x) => `<option ${x == d.rotate ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+        <div class="field"><label>Flip</label><select id="${type}_flip">${["none", "h", "v", "both"].map((x) => `<option ${x === d.flip ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+      </div>
+      <div class="field"><label>Brightness — lower = darker (${type === "text" ? "affects anti-aliasing only" : "adjusts the image before dithering"})</label>
+        <div class="range"><input type="range" id="${type}_brightness" min="0" max="255" value="${d.brightness}"><output>${d.brightness}</output></div></div>
+      <div class="field"><label>Intensity — print head heat (93 normal, 110+ for QR/barcodes, &gt;150 risks paper)</label>
+        <div class="range"><input type="range" id="${type}_intensity" min="0" max="255" value="${d.intensity}"><output>${d.intensity}</output></div></div>
+      <div class="field"><label class="check"><input type="checkbox" id="${type}_invert"> Invert (white on black)</label></div>
+    </details>`;
+  }
+
+  function val(id) {
+    const el = $(id);
+    if (!el) return undefined;
+    if (el.type === "checkbox") return el.checked;
+    return el.value;
+  }
+
+  function collectJob(type) {
+    const job = { type };
+    for (const k of ["dither", "rotate", "flip", "brightness", "intensity", "invert"]) {
+      const v = val(`${type}_${k}`);
+      if (v !== undefined) job[k] = v;
+    }
+    if (type === "text") {
+      job.text = $("text").value;
+      for (const k of ["font", "size", "align", "margin", "lineHeight", "bold", "mono"]) job[k] = val("text_" + k);
+    } else if (type === "image") {
+      job.images = state.images.map((i) => i.data);
+      job.gap = val("image_gap");
+      job.noScale = val("image_noScale");
+    } else if (type === "qr") {
+      job.text = $("qr_text").value;
+      job.size = val("qr_size"); job.label = val("qr_label"); job.labelSize = val("qr_labelSize");
+    } else if (type === "feed") {
+      job.px = val("feed_px");
+    }
+    return job;
+  }
+
+  function jobHasContent(job) {
+    if (job.type === "text") return job.text.trim().length > 0;
+    if (job.type === "image") return job.images.length > 0;
+    if (job.type === "qr") return job.text.trim().length > 0;
+    return true;
+  }
+
+  // ----- preview -------------------------------------------------------
+  let previewTimer, previewSeq = 0;
+  function schedulePreview() { clearTimeout(previewTimer); previewTimer = setTimeout(refreshPreview, 250); }
+  async function refreshPreview() {
+    const type = state.tab === "printer" ? "feed" : state.tab;
+    if (type === "settings") return;
+    const job = collectJob(type);
+    const seq = ++previewSeq;
+    if (!jobHasContent(job)) { showPreview(null); return; }
+    try {
+      const res = await api("POST", "/api/preview", job);
+      if (seq !== previewSeq) return;
+      const blob = await res.blob();
+      showPreview(URL.createObjectURL(blob), Number(res.headers.get("X-Height")));
+    } catch (err) {
+      if (seq === previewSeq) { showPreview(null); $("previewInfo").textContent = err.message; }
+    }
+  }
+  function showPreview(url, height) {
+    const img = $("paper"), empty = $("paperEmpty");
+    if (!url) { img.hidden = true; empty.hidden = false; $("previewInfo").textContent = ""; return; }
+    if (img.src) URL.revokeObjectURL(img.src);
+    img.src = url; img.hidden = false; empty.hidden = true;
+    $("previewInfo").textContent = `${height} px ≈ ${(height / 8).toFixed(0)} mm`;
+  }
+
+  // ----- printing ------------------------------------------------------
+  async function print(type) {
+    const job = collectJob(type);
+    if (!jobHasContent(job)) { toast("Nothing to print", "bad"); return; }
+    const btn = document.querySelector(`[data-print="${type}"]`);
+    btn.disabled = true;
+    try {
+      const r = await api("POST", "/api/print", job);
+      toast(`Printed ${r.height}px`, "good");
+    } catch (err) {
+      toast("Print failed: " + err.message, "bad");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ----- images --------------------------------------------------------
+  function addFiles(files) {
+    for (const f of files) {
+      if (!f.type.startsWith("image/")) continue;
+      const reader = new FileReader();
+      reader.onload = () => { state.images.push({ name: f.name, data: reader.result }); renderThumbs(); schedulePreview(); };
+      reader.readAsDataURL(f);
+    }
+  }
+  function renderThumbs() {
+    $("thumbs").innerHTML = state.images.map((im, i) => `<div class="thumb" title="${im.name}"><img src="${im.data}"><button data-rm="${i}" title="remove">×</button></div>`).join("");
+  }
+
+  // ----- status --------------------------------------------------------
+  function renderState(s) {
+    const pill = $("pill");
+    pill.className = "pill " + (s.busy ? "busy" : s.connected ? "on" : s.lastError ? "err" : "");
+    $("pillText").textContent = s.busy ? (s.connected ? "printing…" : "connecting…") : s.connected ? `connected · ${s.deviceName || "MXW01"}` : s.lastError ? "error" : "not connected";
+    $("btnConnect").disabled = s.connected || s.busy;
+    $("btnDisconnect").disabled = !s.connected;
+    const st = s.lastStatus;
+    const flags = st ? [["Printer", st.printing ? "printing" : "idle", ""], ["Paper", st.out_of_paper ? "out of paper" : "ok", st.out_of_paper ? "bad" : "good"], ["Cover", st.cover_open ? "open" : "closed", st.cover_open ? "bad" : "good"], ["Battery", st.battery_low ? "low" : "ok", st.battery_low ? "bad" : "good"], ["Temperature", st.overheat ? "overheat" : "ok", st.overheat ? "bad" : "good"], ["Jam", st.paper_jam ? "jam" : "none", st.paper_jam ? "bad" : "good"]] : [["Status", "unknown — press refresh", ""]];
+    $("statusGrid").innerHTML = [["Connection", s.connected ? "connected" : "disconnected", s.connected ? "good" : ""], ...flags].map(([k, v, c]) => `<div class="stat ${c}">${k}<b>${v}</b></div>`).join("");
+    $("lastJob").textContent = s.lastError ? "Last error: " + s.lastError : s.lastJob ? `Last job: ${s.lastJob.label} at ${new Date(s.lastJob.at).toLocaleTimeString()}${s.lastJob.ok ? "" : " (failed)"}` : "";
+  }
+  function connectEvents() {
+    const es = new EventSource("/api/events");
+    es.onmessage = (e) => renderState(JSON.parse(e.data));
+    es.onerror = () => { es.close(); $("pillText").textContent = "server unreachable"; $("pill").className = "pill err"; setTimeout(connectEvents, 3000); };
+  }
+
+  // ----- settings ------------------------------------------------------
+  const SETTING_FIELDS = ["server.idleDisconnectSec", "server.scanTimeoutSec", "print.brightness", "print.intensity", "print.rotate", "print.flip", "image.dither", "image.brightness", "image.intensity", "image.gap", "text.dither", "text.intensity", "text.font", "text.size", "text.align", "text.margin", "text.lineHeight", "qr.intensity", "qr.size", "qr.labelSize", "feed.px"];
+  function fillSettingsForm(s) {
+    for (const p of SETTING_FIELDS) {
+      const [a, b] = p.split(".");
+      const el = $(`s_${a}_${b}`);
+      if (el) el.value = s[a][b];
+    }
+  }
+  function readSettingsForm() {
+    const out = JSON.parse(JSON.stringify(state.settings));
+    for (const p of SETTING_FIELDS) {
+      const [a, b] = p.split(".");
+      const el = $(`s_${a}_${b}`);
+      if (!el) continue;
+      out[a][b] = el.type === "number" ? Number(el.value) : /^\d+$/.test(el.value) && el.tagName === "SELECT" ? Number(el.value) : el.value;
+    }
+    return out;
+  }
+  function applyDefaultsToTabs(s) {
+    $("text_font").value = s.text.font; $("text_size").value = s.text.size; $("text_align").value = s.text.align;
+    $("text_margin").value = s.text.margin; $("text_lineHeight").value = s.text.lineHeight; $("text_bold").checked = !!s.text.bold; $("text_mono").checked = !!s.text.mono;
+    $("image_gap").value = s.image.gap; $("image_noScale").checked = !!s.image.noScale;
+    $("qr_size").value = s.qr.size; $("qr_labelSize").value = s.qr.labelSize;
+    $("feed_px").value = s.feed.px;
+    for (const t of ["text", "image", "qr"]) $("opts-" + t).innerHTML = optionsBlock(t);
+  }
+
+  // ----- init ----------------------------------------------------------
+  async function init() {
+    const info = await api("GET", "/api/settings");
+    state.settings = info.settings; state.fonts = info.fonts; state.dithers = info.dithers;
+    const fontOpts = state.fonts.map((f) => `<option>${f}</option>`).join("");
+    $("text_font").innerHTML = fontOpts; $("s_text_font").innerHTML = fontOpts;
+    const ditherOpts = state.dithers.map((d) => `<option>${d}</option>`).join("");
+    $("s_image_dither").innerHTML = ditherOpts; $("s_text_dither").innerHTML = ditherOpts;
+    fillSettingsForm(state.settings);
+    applyDefaultsToTabs(state.settings);
+    connectEvents();
+
+    // tabs
+    $("tabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      state.tab = b.dataset.tab;
+      document.querySelectorAll("#tabs button").forEach((x) => x.classList.toggle("active", x === b));
+      document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x.id === "tab-" + state.tab));
+      schedulePreview();
+    });
+
+    // any input change → preview; range outputs
+    document.querySelector("main").addEventListener("input", (e) => {
+      if (e.target.type === "range") e.target.nextElementSibling.textContent = e.target.value;
+      if (!e.target.id.startsWith("s_")) schedulePreview();
+    });
+    document.querySelector("main").addEventListener("change", (e) => { if (!e.target.id.startsWith("s_")) schedulePreview(); });
+
+    // print buttons
+    document.querySelectorAll("[data-print]").forEach((b) => b.addEventListener("click", () => print(b.dataset.print)));
+
+    // images
+    const drop = $("drop");
+    drop.addEventListener("click", () => $("file").click());
+    $("file").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+    drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); });
+    document.addEventListener("paste", (e) => { if (state.tab === "image") addFiles([...e.clipboardData.files]); });
+    $("thumbs").addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (!b) return; state.images.splice(Number(b.dataset.rm), 1); renderThumbs(); schedulePreview(); });
+
+    // printer tab
+    $("btnConnect").addEventListener("click", () => api("POST", "/api/connect").catch((err) => toast(err.message, "bad")));
+    $("btnDisconnect").addEventListener("click", () => api("POST", "/api/disconnect").catch((err) => toast(err.message, "bad")));
+    $("btnStatus").addEventListener("click", async () => {
+      $("btnStatus").disabled = true;
+      try { const r = await api("POST", "/api/status"); toast("Printer: " + r.text); }
+      catch (err) { toast(err.message, "bad"); }
+      finally { $("btnStatus").disabled = false; }
+    });
+    $("btnTest").addEventListener("click", async () => {
+      $("btnTest").disabled = true;
+      try {
+        for (const d of state.dithers) {
+          await api("POST", "/api/print", { type: "test", dither: d });
+        }
+        toast("Test strip printed", "good");
+      } catch (err) { toast(err.message, "bad"); }
+      finally { $("btnTest").disabled = false; }
+    });
+
+    // settings
+    $("btnSave").addEventListener("click", async () => {
+      try {
+        const r = await api("PUT", "/api/settings", readSettingsForm());
+        state.settings = r.settings; applyDefaultsToTabs(state.settings); toast("Settings saved", "good");
+      } catch (err) { toast(err.message, "bad"); }
+    });
+    $("btnReset").addEventListener("click", async () => {
+      fillSettingsForm(info.defaults);
+      toast("Built-in defaults loaded — press Save to keep them");
+    });
+  }
+
+  init().catch((err) => toast("Failed to load: " + err.message, "bad"));
+})();
+</script>
+</body>
+</html>

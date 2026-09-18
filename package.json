@@ -1,0 +1,36 @@
+{
+  "name": "mxw01-thermal-printer-webui",
+  "version": "1.0.0",
+  "description": "Web UI, CLI and JSON API for the MXW01 Bluetooth thermal printer (Linux / BlueZ)",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trollp/MXW01_thermal_printer_WebUI.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "mxprint": "./mxprint",
+    "mxprint-web": "./mxprint-web"
+  },
+  "scripts": {
+    "start": "./mxprint-web",
+    "web": "./mxprint-web",
+    "print": "./mxprint"
+  },
+  "dependencies": {
+    "@stoprocent/noble": "^2.8.0",
+    "canvas": "^3.2.3",
+    "dbus-next": "^0.10.2",
+    "mxw01-thermal-printer": "^0.1.0",
+    "qrcode": "^1.5.4"
+  },
+  "overrides": {
+    "mxw01-thermal-printer": {
+      "@stoprocent/noble": "$@stoprocent/noble"
+    },
+    "node-gyp": "^11.0.0"
+  }
+}

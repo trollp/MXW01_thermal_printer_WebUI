@@ -1,0 +1,6 @@
+#!/bin/sh
+# Launcher for mxprint.cjs. NOBLE_BINDINGS=dbus makes noble talk to BlueZ over
+# D-Bus (no root needed); the symlink flags let the library find its peer deps
+# here even when it is npm-linked from a local checkout.
+DIR=$(dirname "$(readlink -f "$0")")
+NOBLE_BINDINGS=dbus exec node --preserve-symlinks --preserve-symlinks-main "$DIR/mxprint.cjs" "$@"
