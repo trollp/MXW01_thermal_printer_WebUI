@@ -219,7 +219,11 @@ UI ─▶ server.cjs (http + SSE) ────────────┴─ lib
 * `lib/printer.cjs` — `PrinterManager`: serialises jobs, connects on demand
   with a scan timeout, releases the link after `idleDisconnectSec`. With a
   configured address it first calls BlueZ's `Adapter1.ConnectDevice` over
-  D‑Bus, which always connects over LE.
+  D‑Bus (always LE) and waits for `ServicesResolved` before handing over to
+  noble. It also watches for links the printer drops on its own (the
+  library's adapter does not) and re‑runs a job once on a dead link;
+  connects are retried once, since the MXW01 sometimes pauses advertising for
+  a few seconds after a burst of jobs.
 * `lib/settings.cjs` — defaults, load/save.
 * `server.cjs` — routes, base64 image upload (no multipart), font list from
   `fc-list`, server‑sent events.
@@ -256,6 +260,7 @@ you copy the dependencies elsewhere:
 | Found but connect times out / `disconnected: removed` | Bluetooth setup above not applied; `bluetoothctl info <addr>` must show `Trusted: yes` and `PreferredBearer: le`. |
 | `Failed to set power on` | `rfkill unblock bluetooth` |
 | `Noble is not installed` | Run through `./mxprint` / `./mxprint-web`, not `node mxprint.cjs`. |
+| `characteristic not found`, `br-connection-busy`, `Print timeout` once in a while | The printer dropped or refused the link; the server reconnects and retries automatically (a print timeout is not retried, the page may have printed). If it persists, power‑cycle the printer. |
 | Too dark / bleeding | Lower `--intensity` (≈80) or raise `--brightness`. |
 | Too light | Raise `--intensity` (100–120). |
 | `canvas` fails to install | Install the native libraries listed under Requirements, then `npm rebuild canvas`. |
