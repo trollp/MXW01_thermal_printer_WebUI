@@ -18,6 +18,10 @@ from connecting at all on most Linux desktops**, and the fix
 * **`mxprint` CLI** — `mxprint image photo.jpg`, `mxprint text "…"`,
   `fortune | mxprint text`, `mxprint qr URL`, `--preview out.png` to check
   without paper.
+* **Charts and weather forecasts** — `chart` and `forecast` job types render
+  line charts (time series with axes, grid, min/max) and daily forecasts with
+  vector weather icons, designed for 1‑bit paper. Feed them data from your
+  home‑automation system, a script, anything.
 * **JSON API** — `POST /api/print` from anything (cron jobs, home automation,
   CI…).
 * **Configurable defaults** — dithering algorithm, brightness, print‑head
@@ -130,6 +134,7 @@ mxprint text [text...]         print text; reads stdin when no text given or tex
 mxprint qr <text> [--label L]  print a QR code, optionally with a caption
 mxprint feed [px]              feed blank paper (8 px ≈ 1 mm)
 mxprint status                 show printer status
+mxprint job <file.json|->      print any job object from JSON (chart, forecast, text, …)
 mxprint web [--host H] [--port P]
 ```
 
@@ -189,6 +194,48 @@ Job fields:
   "px": 120 }                                                              // feed
 ```
 
+### Charts
+
+```jsonc
+{ "type": "chart",
+  "title": "Living room temperature", "subtitle": "last 24 h", "unit": "°C",
+  "series": [
+    { "label": "Living room", "points": [["2026-09-18T00:00:00Z", 21.4], ["2026-09-18T00:05:00Z", 21.5], null] },
+    { "label": "Outside",     "points": [[1758153600000, 11.2], [1758157200000, 10.9]] }   // up to 3 series
+  ],
+  "height": 220, "yMin": 15, "yMax": 25, "decimals": 1, "stats": true }
+```
+
+Points are `[time, value]` with time as ISO string or ms epoch (or plain
+numbers with `"timeAxis": false`); `null` values break the line. Ticks are
+chosen automatically (hours / 12 h / days), the first series gets min/max
+markers and a `min · max · last` line. Second and third series are dashed and
+dotted. Large series are downsampled to ~800 points.
+
+### Weather forecast
+
+```jsonc
+{ "type": "forecast",
+  "title": "Weather · Stockholm", "unit": "°",
+  "now":  { "temperature": 11.5, "condition": "clear-night", "text": "clear night, 84 % humidity" },
+  "days": [
+    { "date": "2026-09-19", "condition": "partlycloudy", "high": 17.0, "low": 11.4, "precipitation": 0,   "wind": 9.5 },
+    { "date": "2026-09-20", "condition": "rainy",        "high": 16.2, "low": 10.1, "precipitation": 4.2, "wind": 7,
+      "precipitationProbability": 80, "label": "Tomorrow" }
+  ],
+  "maxDays": 7 }
+```
+
+One row per day: weekday, icon, low–high range bar on a shared scale,
+precipitation (mm, optional probability) and wind, plus a small
+precipitation bar. Conditions use the Home‑Assistant/Weather‑Kit vocabulary:
+`sunny clear-night partlycloudy cloudy rainy pouring snowy snowy-rainy hail
+lightning lightning-rainy fog windy windy-variant exceptional`. `temperature`
+/ `templow` / `wind_speed` are accepted as aliases, so a raw forecast entry
+can be passed through.
+
+Try both with `mxprint job file.json --preview out.png`.
+
 Requests are queued and run one at a time. Errors come back as
 `{"error": "…"}` with status 400/404/413/500.
 
@@ -216,6 +263,9 @@ UI ─▶ server.cjs (http + SSE) ────────────┴─ lib
 * `lib/render.cjs` — all drawing (node‑canvas). `ditheredPreview()` runs the
   library's own pipeline and paints the resulting rows, so previews are
   pixel‑identical to prints.
+* `lib/charts.cjs` — line charts and forecast rows with hand‑drawn weather
+  icons; only solid ≥2 px strokes and dotted grids, so nothing is lost to
+  thresholding.
 * `lib/printer.cjs` — `PrinterManager`: serialises jobs, connects on demand
   with a scan timeout, releases the link after `idleDisconnectSec`. With a
   configured address it first calls BlueZ's `Adapter1.ConnectDevice` over

@@ -14,6 +14,7 @@ Usage:
   mxprint qr <text> [--label L]  print a QR code, optionally with a caption
   mxprint feed [px]              feed blank paper (default ${settings.feed.px}px)
   mxprint status                 show printer status (flags, battery %, temperature, firmware)
+  mxprint job <file.json|->      print any job object (text/image/qr/chart/forecast…) from JSON, see README
   mxprint web                    start the web UI (see mxprint web --help)
   mxprint help
 
@@ -156,6 +157,18 @@ async function main() {
       const d = { ...settings.print, dither: "threshold" };
       const job = { type: "feed", px: positional[0] ?? settings.feed.px };
       await output(job, opts, R.printOptions(opts, d));
+      break;
+    }
+    case "job": {
+      const src = positional[0];
+      if (!src) die("job: give a JSON file (or - for stdin)");
+      let body;
+      try { body = JSON.parse(src === "-" ? await readStdin() : fs.readFileSync(src, "utf8")); }
+      catch (err) { die("job: invalid JSON: " + err.message); }
+      const type = body.type;
+      const d = { ...settings.print, ...(settings[type] || {}) };
+      const job = { ...d, ...body, ...opts };
+      await output(job, opts, R.printOptions(job, d));
       break;
     }
     case "status": {
