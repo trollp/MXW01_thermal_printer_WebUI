@@ -31,8 +31,11 @@ from connecting at all on most Linux desktops**, and the fix
 
 ## Requirements
 
-* Linux with **BlueZ ≥ 5.79** (Fedora 40+, Ubuntu 24.10+, Debian 13, Arch…).
-  Older BlueZ lacks the `PreferredBearer` property needed for the fix below.
+* Linux with **BlueZ ≥ 5.72**. On 5.79+ (Fedora 40+, Ubuntu 24.10+, Debian 13,
+  Arch…) a one‑time `PreferredBearer` setting makes the printer connectable
+  for everything; on older BlueZ (Ubuntu 24.04 = 5.72) you configure the
+  printer's address instead and this project handles the connection itself.
+  Both are below.
 * **Node.js ≥ 18**.
 * Build tools and libraries for `node-canvas` if no prebuilt binary matches
   your platform: on Fedora `gcc-c++ make python3 cairo-devel pango-devel
@@ -69,6 +72,17 @@ bluetoothctl devices | grep MXW01            # → Device AA:BB:CC:DD:EE:FF MXW0
 D=/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF       # your printer's address, ':' → '_'
 gdbus call --system --dest org.bluez --object-path $D --method org.freedesktop.DBus.Properties.Set org.bluez.Device1 PreferredBearer '<"le">'
 gdbus call --system --dest org.bluez --object-path $D --method org.freedesktop.DBus.Properties.Set org.bluez.Device1 Trusted '<true>'
+```
+
+**BlueZ older than 5.79** (`bluetoothctl --version`; e.g. Ubuntu 24.04) has no
+`PreferredBearer`. Do only the first two lines above (Experimental + restart),
+then give this project the printer's address so it can ask BlueZ for an LE
+connection directly:
+
+```sh
+cp settings.example.json settings.json
+#   → set "bluetooth": { "address": "AA:BB:CC:DD:EE:FF" }   (or in the UI: Settings → Printer Bluetooth address)
+./mxprint --address AA:BB:CC:DD:EE:FF status              # one-off from the CLI
 ```
 
 Details, diagnosis and other pitfalls: [docs/BLUETOOTH.md](docs/BLUETOOTH.md).
@@ -130,6 +144,7 @@ Options on every print command:
 | `--invert` | | white on black |
 | `--preview FILE` | | write a PNG of exactly what would print, don't print |
 | `--timeout S` | 30 | scan timeout |
+| `--address MAC` | from settings | printer address; BlueZ connects over LE first (BlueZ < 5.79) |
 
 Text: `--size`, `--font`, `--mono`, `--bold`, `--align left|center|right`,
 `--margin`, `--line-height`. Image: `--no-scale`, `--gap`. QR: `--size`,
@@ -182,7 +197,8 @@ Requests are queued and run one at a time. Errors come back as
 `settings.json` in the repo directory (see [`settings.example.json`](settings.example.json));
 created by *Save* in the UI, or copy the example. Sections: `server` (host,
 port, `idleDisconnectSec` — 0 releases the printer after every job —,
-`scanTimeoutSec`), `print` (global defaults), `image`, `text`, `qr`, `feed`
+`scanTimeoutSec`), `bluetooth` (`address` of the printer and `adapter`; see
+Bluetooth setup), `print` (global defaults), `image`, `text`, `qr`, `feed`
 (per‑type overrides). The CLI reads the same file.
 
 ## How it works
@@ -201,7 +217,9 @@ UI ─▶ server.cjs (http + SSE) ────────────┴─ lib
   library's own pipeline and paints the resulting rows, so previews are
   pixel‑identical to prints.
 * `lib/printer.cjs` — `PrinterManager`: serialises jobs, connects on demand
-  with a scan timeout, releases the link after `idleDisconnectSec`.
+  with a scan timeout, releases the link after `idleDisconnectSec`. With a
+  configured address it first calls BlueZ's `Adapter1.ConnectDevice` over
+  D‑Bus, which always connects over LE.
 * `lib/settings.cjs` — defaults, load/save.
 * `server.cjs` — routes, base64 image upload (no multipart), font list from
   `fc-list`, server‑sent events.

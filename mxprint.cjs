@@ -26,6 +26,7 @@ Print options (all commands):
   --invert            invert black/white before printing
   --preview <file>    write a PNG of exactly what would print, instead of printing
   --timeout <s>       scan timeout in seconds (default ${settings.server.scanTimeoutSec})
+  --address <mac>     printer address; makes BlueZ connect over LE first (needed on BlueZ < 5.79)
 
 Image options:
   --no-scale          do not scale to paper width (crops if wider)
@@ -57,7 +58,7 @@ Examples:
 
 const FLAGS_WITH_VALUE = new Set([
   "dither", "brightness", "intensity", "rotate", "flip", "preview", "timeout",
-  "gap", "size", "font", "align", "margin", "line-height", "label",
+  "gap", "size", "font", "align", "margin", "line-height", "label", "address",
 ]);
 const BOOL_FLAGS = new Set(["invert", "no-scale", "mono", "bold", "help"]);
 
@@ -101,7 +102,10 @@ async function readStdin() {
 
 function manager(opts) {
   const scanTimeoutSec = Number(opts.timeout) || settings.server.scanTimeoutSec;
-  return new PrinterManager({ idleDisconnectSec: 0, scanTimeoutSec, log: (m) => console.error(m) });
+  return new PrinterManager({
+    idleDisconnectSec: 0, scanTimeoutSec, log: (m) => console.error(m),
+    address: opts.address ?? settings.bluetooth.address, adapter: settings.bluetooth.adapter,
+  });
 }
 
 /** Render a job, then either write the preview PNG or print it. */

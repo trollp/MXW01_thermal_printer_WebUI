@@ -27,6 +27,8 @@ const log = (m) => console.log(new Date().toLocaleTimeString() + "  " + m);
 const pm = new PrinterManager({
   idleDisconnectSec: settings.server.idleDisconnectSec,
   scanTimeoutSec: settings.server.scanTimeoutSec,
+  address: settings.bluetooth.address,
+  adapter: settings.bluetooth.adapter,
   log,
 });
 
@@ -135,6 +137,8 @@ async function handle(req, res) {
     settings = Settings.save(body);
     pm.idleDisconnectSec = settings.server.idleDisconnectSec;
     pm.scanTimeoutSec = settings.server.scanTimeoutSec;
+    pm.address = settings.bluetooth.address;
+    pm.adapter = settings.bluetooth.adapter;
     log("settings saved");
     return sendJson(res, 200, { settings });
   }

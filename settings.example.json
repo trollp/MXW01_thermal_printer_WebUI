@@ -5,6 +5,7 @@
     "idleDisconnectSec": 120,
     "scanTimeoutSec": 30
   },
+  "bluetooth": { "address": "", "adapter": "hci0" },
   "print": { "dither": "steinberg", "brightness": 128, "intensity": 93, "rotate": 0, "flip": "none" },
   "image": { "dither": "steinberg", "brightness": 128, "intensity": 93, "noScale": false, "gap": 24 },
   "text": {

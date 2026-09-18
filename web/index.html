@@ -185,6 +185,11 @@
         <div class="field"><label>Scan timeout (s)</label><input type="number" id="s_server_scanTimeoutSec" min="5" max="600"></div>
       </div>
       <div class="hint">The printer accepts one connection at a time: while this UI holds it, the phone app can't connect.</div>
+      <div class="row" style="margin-top:14px">
+        <div class="field"><label>Printer Bluetooth address (optional, e.g. AA:BB:CC:DD:EE:FF)</label><input type="text" id="s_bluetooth_address" placeholder="leave empty to find it by scanning"></div>
+        <div class="field"><label>Adapter</label><input type="text" id="s_bluetooth_adapter" placeholder="hci0"></div>
+      </div>
+      <div class="hint">With an address set, the server asks BlueZ for an LE connection before scanning — required on BlueZ older than 5.79 (e.g. Ubuntu 24.04), harmless elsewhere. Needs <code>Experimental = true</code> in <code>/etc/bluetooth/main.conf</code>.</div>
       <h3>Default print options</h3>
       <div class="row">
         <div class="field"><label>Brightness (0–255)</label><input type="number" id="s_print_brightness" min="0" max="255"></div>
@@ -385,7 +390,7 @@
   }
 
   // ----- settings ------------------------------------------------------
-  const SETTING_FIELDS = ["server.idleDisconnectSec", "server.scanTimeoutSec", "print.brightness", "print.intensity", "print.rotate", "print.flip", "image.dither", "image.brightness", "image.intensity", "image.gap", "text.dither", "text.intensity", "text.font", "text.size", "text.align", "text.margin", "text.lineHeight", "qr.intensity", "qr.size", "qr.labelSize", "feed.px"];
+  const SETTING_FIELDS = ["server.idleDisconnectSec", "server.scanTimeoutSec", "bluetooth.address", "bluetooth.adapter", "print.brightness", "print.intensity", "print.rotate", "print.flip", "image.dither", "image.brightness", "image.intensity", "image.gap", "text.dither", "text.intensity", "text.font", "text.size", "text.align", "text.margin", "text.lineHeight", "qr.intensity", "qr.size", "qr.labelSize", "feed.px"];
   function fillSettingsForm(s) {
     for (const p of SETTING_FIELDS) {
       const [a, b] = p.split(".");

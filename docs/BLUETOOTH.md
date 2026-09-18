@@ -33,7 +33,7 @@ dual‑mode and prefers the classic bearer for `Connect()`. The printer does not
 actually answer on classic Bluetooth. The firmware is lying about its
 capabilities; nothing on the PC side is broken.
 
-## Fix
+## Fix (BlueZ ≥ 5.79)
 
 BlueZ ≥ 5.79 can be told which bearer to use per device, but only when its
 experimental D‑Bus interfaces are enabled.
@@ -72,6 +72,29 @@ bluetoothctl info AA:BB:CC:DD:EE:FF
 If `PreferredBearer` is not listed at all, the experimental flag is not active
 (check `grep ^Experimental /etc/bluetooth/main.conf` and that `bluetoothd` was
 restarted).
+
+## Fix (BlueZ 5.72 – 5.78, e.g. Ubuntu 24.04)
+
+Older BlueZ has no `PreferredBearer`, but it does have the experimental
+`org.bluez.Adapter1.ConnectDevice` method, which connects to a given address
+**over LE unconditionally**:
+
+```sh
+sudo sed -i 's/^#Experimental = false/Experimental = true/' /etc/bluetooth/main.conf
+sudo systemctl restart bluetooth
+
+gdbus call --system --dest org.bluez --object-path /org/bluez/hci0 \
+  --method org.bluez.Adapter1.ConnectDevice \
+  '{"Address": <"AA:BB:CC:DD:EE:FF">, "AddressType": <"public">}'
+```
+
+This project does exactly that call before every connection when
+`bluetooth.address` is set in `settings.json` (or `--address` on the CLI).
+Once BlueZ has completed one LE connection it also tends to pick LE for plain
+`Connect()` for a while, but the explicit call makes it deterministic.
+
+If `ConnectDevice` itself times out, power‑cycle the printer: it may still be
+holding a link with another device.
 
 ## Other pitfalls
 
