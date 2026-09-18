@@ -176,10 +176,18 @@ async function handle(req, res) {
   }
 
   if (route === "POST /api/print") {
-    const { job, popts } = await buildJob(await readJson(req));
+    const body = await readJson(req);
+    const { job, popts } = await buildJob(body);
     const canvas = await R.renderJob(job);
     log(`print ${job.type} ${canvas.height}px (${popts.dither}, intensity ${popts.intensity})`);
-    await pm.print(R.canvasImageData(canvas), popts, job.type);
+    const printing = pm.print(R.canvasImageData(canvas), popts, job.type);
+    // async: answer as soon as the job is rendered and queued (voice assistants,
+    // automations that should not block); failures then only show in the log/UI.
+    if (body.async === true || url.searchParams.get("async") === "1") {
+      printing.catch((err) => log(`async print failed: ${err.message}`));
+      return sendJson(res, 202, { ok: true, queued: true, height: canvas.height, state: pm.snapshot() });
+    }
+    await printing;
     return sendJson(res, 200, { ok: true, height: canvas.height, state: pm.snapshot() });
   }
 
