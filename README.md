@@ -229,7 +229,8 @@ note line per item, counts in the footer.
 ```jsonc
 { "type": "label", "text": "Chicken soup", "sub": "2 portions · reheat 8 min", "date": true,
   "icon": "snowflake", "band": "FREEZER", "font": "display", "frame": "rounded",
-  "qr": "https://…", "note": "use within 3 months", "count": 3 }
+  "qr": "https://…", "note": "use within 3 months", "count": 3,
+  "details": ["Grape: Red · Cyprus", "400 ml · 12 % vol."] }   // small lines inside the frame
 ```
 
 Auto‑fitted title (one line when it can stay ≥ 40 px), optional second line,
