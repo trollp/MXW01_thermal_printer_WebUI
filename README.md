@@ -143,6 +143,7 @@ Options on every print command:
 | Option | Default | |
 |---|---|---|
 | `--dither` | image `steinberg`, text/qr `threshold` | `threshold` `steinberg` `bayer` `atkinson` `pattern` |
+| `--style` (text) | | `display` `marker` `handwriting` `casual` `script` `serif` `mono` — bundled fonts |
 | `--brightness` | 128 | 0–255, applied before dithering; higher = lighter |
 | `--intensity` | 93 (qr 110) | 0–255 print‑head heat; 150+ can damage paper |
 | `--rotate` / `--flip` | 0 / none | `0 90 180 270` / `none h v both` |
@@ -223,6 +224,30 @@ dotted. Large series are downsampled to ~800 points.
 ☐ boxes (ticked and struck through when `done`), wrapped long items, optional
 note line per item, counts in the footer.
 
+### Labels
+
+```jsonc
+{ "type": "label", "text": "Chicken soup", "sub": "2 portions · reheat 8 min", "date": true,
+  "icon": "snowflake", "band": "FREEZER", "font": "display", "frame": "rounded",
+  "qr": "https://…", "note": "use within 3 months", "count": 3 }
+```
+
+Auto‑fitted title (one line when it can stay ≥ 40 px), optional second line,
+date/note line, inverted header band, vector icon (`jar snowflake leaf bottle
+bread fish meat cheese cup heart star gift sun clock warning`), QR on the
+right, frames `rounded | double | ticket | none`, several copies separated by
+`✂` cut lines. Fonts: `display` (Bebas Neue), `marker` (Permanent Marker),
+`handwriting` (Kalam Bold), `casual` (Patrick Hand), `script` (Pacifico),
+`sans`. The fonts are bundled in `fonts/` (OFL / Apache licences included).
+
+Text jobs accept the same `style` names plus `frame` (`rounded | double |
+dashed`) and `ruled: true` for notepad lines:
+
+```jsonc
+{ "type": "text", "style": "handwriting", "ruled": true, "frame": "rounded",
+  "text": "Anna,\ndinner is in the fridge.\n\n— Peter" }
+```
+
 ### Weather forecast
 
 ```jsonc
@@ -277,6 +302,9 @@ UI ─▶ server.cjs (http + SSE) ────────────┴─ lib
 * `lib/render.cjs` — all drawing (node‑canvas). `ditheredPreview()` runs the
   library's own pipeline and paints the resulting rows, so previews are
   pixel‑identical to prints.
+* `lib/labels.cjs` — labels: frames, header bands, vector icons, auto‑fit
+  type, cut lines. `lib/fonts.cjs` registers the bundled fonts and defines the
+  named styles.
 * `lib/charts.cjs` — line charts and forecast rows with hand‑drawn weather
   icons; only solid ≥2 px strokes and dotted grids, so nothing is lost to
   thresholding.

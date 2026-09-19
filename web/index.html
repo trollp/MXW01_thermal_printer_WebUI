@@ -108,6 +108,7 @@
       <button data-tab="text" class="active">Text</button>
       <button data-tab="image">Image</button>
       <button data-tab="qr">QR code</button>
+      <button data-tab="label">Label</button>
       <button data-tab="printer">Printer</button>
       <button data-tab="settings">Settings</button>
     </div>
@@ -128,9 +129,14 @@
         <div class="field"><label>Side margin (px)</label><input type="number" id="text_margin" min="0" max="180"></div>
         <div class="field"><label>Line height</label><input type="number" id="text_lineHeight" min="0.8" max="3" step="0.05"></div>
       </div>
+      <div class="row">
+        <div class="field"><label>Style</label><select id="text_style"><option value="">Plain (font above)</option><option value="display">Display — big condensed caps</option><option value="marker">Marker</option><option value="handwriting">Handwriting</option><option value="casual">Casual hand</option><option value="script">Script</option><option value="serif">Serif</option><option value="mono">Typewriter</option></select></div>
+        <div class="field"><label>Frame</label><select id="text_frame"><option value="none">none</option><option value="rounded">rounded</option><option value="double">double</option><option value="dashed">dashed</option></select></div>
+      </div>
       <div class="field">
         <label class="check"><input type="checkbox" id="text_bold"> Bold</label>
         <label class="check"><input type="checkbox" id="text_mono"> Monospace</label>
+        <label class="check"><input type="checkbox" id="text_ruled"> Ruled lines (notepad)</label>
       </div>
       <div id="opts-text"></div>
       <div class="actions"><button class="btn primary" data-print="text">Print text</button></div>
@@ -159,6 +165,31 @@
       </div>
       <div id="opts-qr"></div>
       <div class="actions"><button class="btn primary" data-print="qr">Print QR</button></div>
+    </div>
+
+    <!-- LABEL -->
+    <div class="tab" id="tab-label">
+      <div class="row">
+        <div class="field"><label for="label_text">Label text</label><input type="text" id="label_text" placeholder="Chicken soup"></div>
+        <div class="field"><label>Second line</label><input type="text" id="label_sub" placeholder="2 portions · reheat 8 min"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Header band (inverted)</label><input type="text" id="label_band" placeholder="FREEZER / FRIDGE / PANTRY"></div>
+        <div class="field"><label>Icon</label><select id="label_icon"><option value="">none</option><option>jar</option><option>snowflake</option><option>leaf</option><option>bottle</option><option>bread</option><option>fish</option><option>meat</option><option>cheese</option><option>cup</option><option>heart</option><option>star</option><option>gift</option><option>sun</option><option>clock</option><option>warning</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Font</label><select id="label_font"><option value="display">Display (condensed caps)</option><option value="marker">Marker</option><option value="handwriting">Handwriting</option><option value="casual">Casual hand</option><option value="script">Script</option><option value="sans">Sans</option></select></div>
+        <div class="field"><label>Frame</label><select id="label_frame"><option value="rounded">rounded</option><option value="double">double</option><option value="ticket">ticket</option><option value="none">none</option></select></div>
+        <div class="field"><label>Copies (with cut lines)</label><input type="number" id="label_count" min="1" max="20" value="1"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Note (small line)</label><input type="text" id="label_note" placeholder="use within 3 months"></div>
+        <div class="field"><label>QR content (optional)</label><input type="text" id="label_qr" placeholder="https://… or WIFI:T:WPA;S:name;P:pass;;"></div>
+        <div class="field" style="align-self:end"><label class="check"><input type="checkbox" id="label_date" checked> Print today's date</label></div>
+      </div>
+      <div class="hint">Plain thermal paper is not adhesive — for real labels use self-adhesive 57 mm rolls (they load like normal paper), or tape.</div>
+      <div id="opts-label"></div>
+      <div class="actions"><button class="btn primary" data-print="label">Print label</button></div>
     </div>
 
     <!-- PRINTER -->
@@ -269,7 +300,7 @@
   // ----- shared print-option block (dither / brightness / intensity / rotate / flip / invert)
   function optionsBlock(type) {
     const d = { ...state.settings.print, ...(state.settings[type] || {}) };
-    const showDither = type !== "qr";
+    const showDither = type !== "qr" && type !== "label";
     return `
     <details>
       <summary>Print options</summary>
@@ -301,11 +332,15 @@
     }
     if (type === "text") {
       job.text = $("text").value;
-      for (const k of ["font", "size", "align", "margin", "lineHeight", "bold", "mono"]) job[k] = val("text_" + k);
+      for (const k of ["font", "size", "align", "margin", "lineHeight", "bold", "mono", "style", "frame", "ruled"]) job[k] = val("text_" + k);
     } else if (type === "image") {
       job.images = state.images.map((i) => i.data);
       job.gap = val("image_gap");
       job.noScale = val("image_noScale");
+    } else if (type === "label") {
+      job.text = $("label_text").value;
+      for (const k of ["sub", "band", "icon", "font", "frame", "count", "note", "qr"]) job[k] = val("label_" + k);
+      job.date = $("label_date").checked;
     } else if (type === "qr") {
       job.text = $("qr_text").value;
       job.size = val("qr_size"); job.label = val("qr_label"); job.labelSize = val("qr_labelSize");
@@ -318,7 +353,7 @@
   function jobHasContent(job) {
     if (job.type === "text") return job.text.trim().length > 0;
     if (job.type === "image") return job.images.length > 0;
-    if (job.type === "qr") return job.text.trim().length > 0;
+    if (job.type === "qr" || job.type === "label") return job.text.trim().length > 0;
     return true;
   }
 
@@ -429,7 +464,7 @@
     $("image_gap").value = s.image.gap; $("image_noScale").checked = !!s.image.noScale;
     $("qr_size").value = s.qr.size; $("qr_labelSize").value = s.qr.labelSize;
     $("feed_px").value = s.feed.px;
-    for (const t of ["text", "image", "qr"]) $("opts-" + t).innerHTML = optionsBlock(t);
+    for (const t of ["text", "image", "qr", "label"]) $("opts-" + t).innerHTML = optionsBlock(t);
   }
 
   // ----- init ----------------------------------------------------------

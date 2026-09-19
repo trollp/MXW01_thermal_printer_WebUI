@@ -41,6 +41,8 @@ Text options:
   --align <a>         left|center|right
   --margin <px>       side margin, default ${settings.text.margin}
   --line-height <f>   line height factor, default ${settings.text.lineHeight}
+  --style <s>         display|marker|handwriting|casual|script|serif|mono (bundled fonts)
+  --frame <f>         rounded|double|dashed   --ruled  notepad lines
   Light markup: "# " big heading, "## " heading, "---" horizontal rule, blank line = paragraph gap.
 
 QR options:
@@ -59,9 +61,9 @@ Examples:
 
 const FLAGS_WITH_VALUE = new Set([
   "dither", "brightness", "intensity", "rotate", "flip", "preview", "timeout",
-  "gap", "size", "font", "align", "margin", "line-height", "label", "address",
+  "gap", "size", "font", "align", "margin", "line-height", "label", "address", "style", "frame",
 ]);
-const BOOL_FLAGS = new Set(["invert", "no-scale", "mono", "bold", "help"]);
+const BOOL_FLAGS = new Set(["invert", "no-scale", "mono", "bold", "help", "ruled"]);
 
 function parseArgs(argv) {
   const opts = {};
