@@ -212,6 +212,17 @@ chosen automatically (hours / 12 h / days), the first series gets min/max
 markers and a `min · max · last` line. Second and third series are dashed and
 dotted. Large series are downsampled to ~800 points.
 
+### Checklists
+
+```jsonc
+{ "type": "checklist", "title": "Shopping list", "date": "Sat 20 Sep",
+  "items": ["Milk", { "text": "Coffee beans", "note": "due Sun" }, { "text": "Butter", "done": true }],
+  "size": 24, "showDone": true, "footer": "auto: '4 open · 1 done'", "emptyText": "(nothing on the list)" }
+```
+
+☐ boxes (ticked and struck through when `done`), wrapped long items, optional
+note line per item, counts in the footer.
+
 ### Weather forecast
 
 ```jsonc
