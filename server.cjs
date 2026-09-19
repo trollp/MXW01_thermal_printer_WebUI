@@ -216,6 +216,11 @@ server.listen(PORT, HOST, () => {
   log(`MXW01 web UI on http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}${HOST === "0.0.0.0" ? "  (reachable from your network)" : ""}`);
 });
 
+// Last resort: log and exit so systemd (Restart=on-failure) brings up a clean
+// process instead of running on in an unknown state.
+process.on("uncaughtException", (err) => { log("fatal: " + (err.stack || err.message)); process.exit(1); });
+process.on("unhandledRejection", (err) => { log("unhandled rejection: " + (err && err.stack || err)); });
+
 for (const sig of ["SIGINT", "SIGTERM"]) {
   process.on(sig, async () => { await pm.disconnect(); process.exit(0); });
 }

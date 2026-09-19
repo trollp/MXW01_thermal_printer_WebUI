@@ -18,13 +18,15 @@
   "scripts": {
     "start": "./mxprint-web",
     "web": "./mxprint-web",
-    "print": "./mxprint"
+    "print": "./mxprint",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@stoprocent/noble": "^2.8.0",
     "canvas": "^3.2.3",
     "dbus-next": "^0.10.2",
     "mxw01-thermal-printer": "^0.1.0",
+    "patch-package": "^8.0.1",
     "qrcode": "^1.5.4"
   },
   "overrides": {

@@ -304,6 +304,12 @@ you copy the dependencies elsewhere:
 * `dbus-next` has an optional dependency (`usocket`) that pulls in
   `node-gyp@7`, which cannot build on Node ≥ 20 and breaks noble's native build
   when it gets hoisted. `node-gyp` is overridden to a current version.
+* `patches/dbus-next+0.10.2.patch` (applied by `patch-package` on
+  `npm install`) fixes a refcount bug in `dbus-next`: the `hasOwnProperty`
+  arguments in `_addMatch`/`_removeMatch` are swapped, so D‑Bus match rules
+  were added on every subscription and never removed. With the printer off
+  for a few hours the server hit `max_match_rules_per_connection=2048` and
+  crashed.
 
 ## Troubleshooting
 
