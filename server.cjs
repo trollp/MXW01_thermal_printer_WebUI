@@ -180,15 +180,17 @@ async function handle(req, res) {
     const { job, popts } = await buildJob(body);
     const canvas = await R.renderJob(job);
     log(`print ${job.type} ${canvas.height}px (${popts.dither}, intensity ${popts.intensity})`);
-    const printing = pm.print(R.canvasImageData(canvas), popts, job.type);
+    const imageData = R.canvasImageData(canvas);
     // async: answer as soon as the job is rendered and queued (voice assistants,
-    // automations that should not block); failures then only show in the log/UI.
+    // automations that should not block). If the printer is off and keep-alive
+    // is on, the job is parked and printed when the printer returns.
     if (body.async === true || url.searchParams.get("async") === "1") {
-      printing.catch((err) => log(`async print failed: ${err.message}`));
-      return sendJson(res, 202, { ok: true, queued: true, height: canvas.height, state: pm.snapshot() });
+      pm.printOrDefer(imageData, popts, job.type).catch((err) => log(`async print failed: ${err.message}`));
+      const online = pm.connected;
+      return sendJson(res, 202, { ok: true, queued: true, printerOnline: online, willPrintWhenOnline: !online && pm.keepAlive, height: canvas.height, state: pm.snapshot() });
     }
-    await printing;
-    return sendJson(res, 200, { ok: true, height: canvas.height, state: pm.snapshot() });
+    const r = await pm.printOrDefer(imageData, popts, job.type);
+    return sendJson(res, r.deferred ? 202 : 200, { ok: true, deferred: r.deferred, printerOnline: pm.connected, height: canvas.height, state: pm.snapshot() });
   }
 
   if (route === "POST /api/status") {

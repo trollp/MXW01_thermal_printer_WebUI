@@ -381,7 +381,7 @@
   function renderState(s) {
     const pill = $("pill");
     pill.className = "pill " + (s.busy ? "busy" : s.connected ? "on" : s.lastError ? "err" : "");
-    const batPill = s.lastInfo && typeof s.lastInfo.battery === "number" ? ` · 🔋 ${s.lastInfo.battery}%` : "";
+    const batPill = (s.lastInfo && typeof s.lastInfo.battery === "number" ? ` · 🔋 ${s.lastInfo.battery}%` : "") + (s.deferredJobs ? ` · ${s.deferredJobs} job${s.deferredJobs > 1 ? "s" : ""} waiting` : "");
     $("pillText").textContent = s.busy ? (s.connected ? "working…" : "connecting…") : s.connected ? `connected · ${s.deviceName || "MXW01"}${batPill}${s.keepAlive ? " · keep-alive" : ""}` : s.lastError ? "error" : (s.keepAlive ? "printer off — waiting" : "not connected") + batPill;
     $("btnConnect").disabled = s.connected || s.busy;
     $("btnDisconnect").disabled = !s.connected;
