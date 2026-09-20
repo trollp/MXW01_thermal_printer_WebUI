@@ -143,7 +143,7 @@ Options on every print command:
 | Option | Default | |
 |---|---|---|
 | `--dither` | image `steinberg`, text/qr `threshold` | `threshold` `steinberg` `bayer` `atkinson` `pattern` |
-| `--style` (text) | | `display` `marker` `handwriting` `casual` `script` `serif` `mono` — bundled fonts |
+| `--style` (text) | | any style name from the font table below (`display`, `elegant`, `handwriting`, …) |
 | `--brightness` | 128 | 0–255, applied before dithering; higher = lighter |
 | `--intensity` | 93 (qr 110) | 0–255 print‑head heat; 150+ can damage paper |
 | `--rotate` / `--flip` | 0 / none | `0 90 180 270` / `none h v both` |
@@ -237,9 +237,17 @@ Auto‑fitted title (one line when it can stay ≥ 40 px), optional second line,
 date/note line, inverted header band, vector icon (`jar snowflake leaf bottle
 bread fish meat cheese cup heart star gift sun clock warning`), QR on the
 right, frames `rounded | double | ticket | none`, several copies separated by
-`✂` cut lines. Fonts: `display` (Bebas Neue), `marker` (Permanent Marker),
-`handwriting` (Kalam Bold), `casual` (Patrick Hand), `script` (Pacifico),
-`sans`. The fonts are bundled in `fonts/` (OFL / Apache licences included).
+`✂` cut lines. Fonts are bundled in `fonts/` (OFL / Apache licences included)
+and addressed by style name:
+
+| Group | Styles |
+|---|---|
+| plain | `sans` `serif` `mono` (Liberation) |
+| professional | `modern` / `clean` (Poppins), `classic` (Libre Baskerville), `garamond` (EB Garamond), `elegant` (Playfair Display), `roman` (Cinzel, caps) |
+| display & creative | `display` (Bebas Neue), `impact` (Anton), `slab` (Alfa Slab One), `fatface` (Abril Fatface), `vintage` (Yeseva One), `retro` (Righteous), `comic` (Bangers), `western` (Rye), `typewriter` (Special Elite) |
+| handwriting & script | `marker`, `handwriting` (Kalam Bold), `casual` (Patrick Hand), `script` (Pacifico), `lobster` |
+
+`mxprint job` with `{"type":"fontsheet"}` prints a specimen of all of them.
 
 Text jobs accept the same `style` names plus `frame` (`rounded | double |
 dashed`) and `ruled: true` for notepad lines:

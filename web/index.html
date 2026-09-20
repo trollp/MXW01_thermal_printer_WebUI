@@ -130,7 +130,7 @@
         <div class="field"><label>Line height</label><input type="number" id="text_lineHeight" min="0.8" max="3" step="0.05"></div>
       </div>
       <div class="row">
-        <div class="field"><label>Style</label><select id="text_style"><option value="">Plain (font above)</option><option value="display">Display — big condensed caps</option><option value="marker">Marker</option><option value="handwriting">Handwriting</option><option value="casual">Casual hand</option><option value="script">Script</option><option value="serif">Serif</option><option value="mono">Typewriter</option></select></div>
+        <div class="field"><label>Style</label><select id="text_style"><option value="">Plain (font above)</option></select></div>
         <div class="field"><label>Frame</label><select id="text_frame"><option value="none">none</option><option value="rounded">rounded</option><option value="double">double</option><option value="dashed">dashed</option></select></div>
       </div>
       <div class="field">
@@ -178,7 +178,7 @@
         <div class="field"><label>Icon</label><select id="label_icon"><option value="">none</option><option>jar</option><option>snowflake</option><option>leaf</option><option>bottle</option><option>bread</option><option>fish</option><option>meat</option><option>cheese</option><option>cup</option><option>heart</option><option>star</option><option>gift</option><option>sun</option><option>clock</option><option>warning</option></select></div>
       </div>
       <div class="row">
-        <div class="field"><label>Font</label><select id="label_font"><option value="display">Display (condensed caps)</option><option value="marker">Marker</option><option value="handwriting">Handwriting</option><option value="casual">Casual hand</option><option value="script">Script</option><option value="sans">Sans</option></select></div>
+        <div class="field"><label>Font</label><select id="label_font"></select></div>
         <div class="field"><label>Frame</label><select id="label_frame"><option value="rounded">rounded</option><option value="double">double</option><option value="ticket">ticket</option><option value="none">none</option></select></div>
         <div class="field"><label>Copies (with cut lines)</label><input type="number" id="label_count" min="1" max="20" value="1"></div>
       </div>
@@ -473,6 +473,11 @@
     state.settings = info.settings; state.fonts = info.fonts; state.dithers = info.dithers;
     const fontOpts = state.fonts.map((f) => `<option>${f}</option>`).join("");
     $("text_font").innerHTML = fontOpts; $("s_text_font").innerHTML = fontOpts;
+    // style dropdowns, grouped
+    const groups = { professional: "Professional", display: "Display & creative", hand: "Handwriting & script", plain: "Plain" };
+    const styleOpts = (selected) => Object.entries(groups).map(([g, gl]) => `<optgroup label="${gl}">` + (info.styles || []).filter((x) => x.group === g).map((x) => `<option value="${x.name}" ${x.name === selected ? "selected" : ""}>${x.label}</option>`).join("") + `</optgroup>`).join("");
+    $("text_style").insertAdjacentHTML("beforeend", styleOpts(""));
+    $("label_font").innerHTML = styleOpts("display");
     const ditherOpts = state.dithers.map((d) => `<option>${d}</option>`).join("");
     $("s_image_dither").innerHTML = ditherOpts; $("s_text_dither").innerHTML = ditherOpts;
     fillSettingsForm(state.settings);

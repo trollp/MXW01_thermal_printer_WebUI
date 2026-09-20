@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile } = require("child_process");
 const R = require("./lib/render.cjs");
+const { STYLES } = require("./lib/fonts.cjs");
 const { PrinterManager, describeState } = require("./lib/printer.cjs");
 const Settings = require("./lib/settings.cjs");
 
@@ -152,7 +153,8 @@ async function handle(req, res) {
   }
 
   if (route === "GET /api/settings") {
-    return sendJson(res, 200, { settings, defaults: Settings.DEFAULTS, fonts: await listFonts(), dithers: R.DITHERS, width: R.WIDTH });
+    const styles = Object.entries(STYLES).map(([name, st]) => ({ name, label: st.label || name, group: st.group || "plain" }));
+    return sendJson(res, 200, { settings, defaults: Settings.DEFAULTS, fonts: await listFonts(), styles, dithers: R.DITHERS, width: R.WIDTH });
   }
 
   if (route === "PUT /api/settings") {
