@@ -180,6 +180,7 @@ curl -s -X POST localhost:8377/api/print -H 'Content-Type: application/json' \
 | `POST /api/preview` | job → `image/png` of the dithered bitmap, header `X-Height` |
 | `POST /api/status` | `{state: {printing, paper_jam, out_of_paper, cover_open, battery_low, overheat, battery, temperatureC, firmware}, text}` |
 | `POST /api/connect`, `POST /api/disconnect` | hold / release the BLE link |
+| `POST /api/deferred/clear` | drop jobs parked while the printer was off |
 | `GET /api/state` | manager snapshot; `GET /api/events` streams it (SSE) |
 | `GET /api/settings`, `PUT /api/settings` | read / save defaults |
 

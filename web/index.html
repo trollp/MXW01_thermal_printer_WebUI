@@ -197,6 +197,7 @@
       <div class="status-grid" id="statusGrid"></div>
       <div class="actions">
         <button class="btn" id="btnStatus">Refresh status</button>
+        <button class="btn" id="btnClearDeferred" hidden>Drop waiting jobs</button>
         <span class="hint" id="lastJob"></span>
       </div>
       <h3>Feed paper</h3>
@@ -430,6 +431,8 @@
     if (info.firmware) tiles.push(["Firmware", info.firmware, ""]);
     if (info.at) tiles.push(["Last read", new Date(info.at).toLocaleTimeString(), ""]);
     $("statusGrid").innerHTML = tiles.map(([k, v, c]) => `<div class="stat ${c}">${k}<b>${v}</b></div>`).join("");
+    $("btnClearDeferred").hidden = !s.deferredJobs;
+    $("btnClearDeferred").textContent = `Drop ${s.deferredJobs} waiting job${s.deferredJobs > 1 ? "s" : ""}`;
     $("lastJob").textContent = s.lastError ? "Last error: " + s.lastError : s.lastJob ? `Last job: ${s.lastJob.label} at ${new Date(s.lastJob.at).toLocaleTimeString()}${s.lastJob.ok ? "" : " (failed)"}` : "";
   }
   function connectEvents() {
@@ -516,6 +519,7 @@
     // printer tab
     $("btnConnect").addEventListener("click", () => api("POST", "/api/connect").catch((err) => toast(err.message, "bad")));
     $("btnDisconnect").addEventListener("click", () => api("POST", "/api/disconnect").catch((err) => toast(err.message, "bad")));
+    $("btnClearDeferred").addEventListener("click", () => api("POST", "/api/deferred/clear").then((r) => toast(`Dropped ${r.cleared} job(s)`)).catch((err) => toast(err.message, "bad")));
     $("btnStatus").addEventListener("click", async () => {
       $("btnStatus").disabled = true;
       try { const r = await api("POST", "/api/status"); toast("Printer: " + r.text); }

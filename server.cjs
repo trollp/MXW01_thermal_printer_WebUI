@@ -201,6 +201,12 @@ async function handle(req, res) {
     // state also carries battery (%), temperatureC and firmware
   }
 
+  if (route === "POST /api/deferred/clear") {
+    const n = pm.deferred.length; pm.deferred.length = 0; pm.emit("change");
+    log(`dropped ${n} parked job(s) on request`);
+    return sendJson(res, 200, { cleared: n, state: pm.snapshot() });
+  }
+
   if (route === "POST /api/connect") { await pm.connect(); return sendJson(res, 200, pm.snapshot()); }
   if (route === "POST /api/disconnect") { await pm.disconnect(); return sendJson(res, 200, pm.snapshot()); }
 
