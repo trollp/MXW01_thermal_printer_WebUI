@@ -32,8 +32,10 @@ const pm = new PrinterManager({
   adapter: settings.bluetooth.adapter,
   keepAlive: settings.server.keepAlive,
   keepAliveIntervalSec: settings.server.keepAliveIntervalSec,
+  deferDir: path.join(__dirname, "deferred"),
   log,
 });
+pm.loadDeferred().catch((err) => log("loadDeferred: " + err.message));
 if (settings.server.keepAlive) pm.setKeepAlive(true);
 
 // ---------------------------------------------------------------------------
@@ -202,7 +204,7 @@ async function handle(req, res) {
   }
 
   if (route === "POST /api/deferred/clear") {
-    const n = pm.deferred.length; pm.deferred.length = 0; pm.emit("change");
+    const n = pm.clearDeferred();
     log(`dropped ${n} parked job(s) on request`);
     return sendJson(res, 200, { cleared: n, state: pm.snapshot() });
   }

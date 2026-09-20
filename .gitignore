@@ -3,3 +3,4 @@ settings.json
 previews/
 *.log
 .DS_Store
+deferred/

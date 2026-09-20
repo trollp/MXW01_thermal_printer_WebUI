@@ -176,7 +176,7 @@ curl -s -X POST localhost:8377/api/print -H 'Content-Type: application/json' \
 
 | Endpoint | |
 |---|---|
-| `POST /api/print` | job → `{ok, height, state}` when the printer reports completion; with `"async": true` (or `?async=1`) → `202 {ok, queued, printerOnline, willPrintWhenOnline, height}` as soon as the job is rendered and queued. With keep‑alive on, a job sent while the printer is off is **parked and printed when the printer comes back** (up to 25 jobs, 12 h) |
+| `POST /api/print` | job → `{ok, height, state}` when the printer reports completion; with `"async": true` (or `?async=1`) → `202 {ok, queued, printerOnline, willPrintWhenOnline, height}` as soon as the job is rendered and queued. With keep‑alive on, a job sent while the printer is off is **parked and printed when the printer comes back** (up to 25 jobs, 12 h; parked jobs are stored in `deferred/` and survive a restart) |
 | `POST /api/preview` | job → `image/png` of the dithered bitmap, header `X-Height` |
 | `POST /api/status` | `{state: {printing, paper_jam, out_of_paper, cover_open, battery_low, overheat, battery, temperatureC, firmware}, text}` |
 | `POST /api/connect`, `POST /api/disconnect` | hold / release the BLE link |
